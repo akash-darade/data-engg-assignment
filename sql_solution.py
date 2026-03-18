@@ -1,29 +1,42 @@
 import sqlite3
 import csv
 
-conn=sqlite3.connect("Data Engineer_ETL Assignment.db")
-cursor=conn.cursor()
+try:
+    # Connect to DB
+    conn = sqlite3.connect("Data Engineer_ETL Assignment.db")
+    cursor = conn.cursor()
 
-query="""
-        select c.customer_id as customer,
-        c.age as age,
-        i.item_name as item,
-        sum(o.quantity) as quantity
-        from customer c
-        join sales s on customer_id =s.customer_id
-        join orders o on s.sales_id=o.sales_id
-        join items i on o.item_id=i.item_id
-        where c.age between 18 and 35
-        group by c.customer_id , c.age ,i.item_name
-        having quantity > 0
-        """
-cursor.execute(query)
-rows=cursor.fetchall()
+    # SQL Query
+    query = """
+    SELECT 
+        c.customer_id AS customer,
+        c.age AS age,
+        i.item_name AS item,
+        SUM(o.quantity) AS quantity
+    FROM customer c
+    JOIN sales s ON c.customer_id = s.customer_id
+    JOIN orders o ON s.sales_id = o.sales_id
+    JOIN items i ON o.item_id = i.item_id
+    WHERE c.age BETWEEN 18 AND 35
+    GROUP BY c.customer_id, c.age, i.item_name
+    HAVING SUM(o.quantity) > 0
+    """
 
-with open ("output_sql.csv","w",newline="")as fp:
-  writer=csv.writer(fp,delemiter=";")
-  writer.writerow(["customer","age","item",quantity"])
-  writer.writerows(rows)
-                   
-conn.close()
-  
+    # Execute query
+    cursor.execute(query)
+    rows = cursor.fetchall()
+
+    # Write to CSV
+    with open("output_sql.csv", "w", newline="") as fp:
+        writer = csv.writer(fp, delimiter=",")
+        writer.writerow(["customer", "age", "item", "quantity"])
+        writer.writerows(rows)
+
+    print("Data exported successfully")
+
+except Exception as e:
+    print("Error:", e)
+
+finally:
+    if conn:
+        conn.close()
